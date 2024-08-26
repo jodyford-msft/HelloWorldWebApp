@@ -1,0 +1,125 @@
+name: .NET Core Deploy to Azure WebApp with Traffic Split
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Checkout code'
+      uses: actions/checkout@v2
+
+    - name: 'Set up .NET Core SDK'
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '7.x'
+
+    - name: 'Restore dependencies'
+      run: dotnet restore
+
+    - name: 'Build the app'
+      run: dotnet build --configuration Release --no-restore
+
+    - name: 'Publish the app'
+      run: dotnet publish --configuration Release --output ./publish --no-restore
+
+  deploy_dev:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Azure Login'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Deploy to Dev Slot'
+      run: |
+        az webapp deployment source config-zip \
+          --resource-group ${{ secrets.DEV_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-dev \
+          --slot staging \
+          --src ./publish.zip
+
+    - name: 'Swap Dev Slots (Blue-Green Deployment)'
+      run: |
+        az webapp deployment slot swap \
+          --resource-group ${{ secrets.DEV_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-dev \
+          --slot staging --target-slot production
+
+    - name: 'Restart Dev App Service'
+      run: |
+        az webapp restart \
+          --resource-group ${{ secrets.DEV_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-dev
+
+  approval:
+    needs: deploy_dev
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Await Manual Approval'
+      uses: hmarr/auto-approve-action@v2
+      with:
+        message: 'Approve deployment to production?'
+
+  deploy_prod:
+    needs: approval
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Azure Login'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Deploy to Prod Slot'
+      run: |
+        az webapp deployment source config-zip \
+          --resource-group ${{ secrets.PROD_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-prod \
+          --slot staging \
+          --src ./publish.zip
+
+    - name: 'Route 10% of Traffic to Staging Slot'
+      run: |
+        az webapp traffic-routing set \
+          --resource-group ${{ secrets.PROD_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-prod \
+          --distribution staging=10 production=90
+
+  approval_prod_full:
+    needs: deploy_prod
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Await Manual Approval for Full Traffic Routing'
+      uses: hmarr/auto-approve-action@v2
+      with:
+        message: 'Approve full traffic routing to production?'
+
+  final_routing:
+    needs: approval_prod_full
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 'Monitor Deployment'
+      run: echo "Monitor your application for performance and errors"
+
+    - name: 'Route 100% of Traffic to Production Slot'
+      run: |
+        az webapp traffic-routing clear \
+          --resource-group ${{ secrets.PROD_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-prod
+
+    - name: 'Restart Prod App Service'
+      run: |
+        az webapp restart \
+          --resource-group ${{ secrets.PROD_RESOURCE_GROUP }} \
+          --name ${{ secrets.APP_SERVICE_NAME }}-prod
+
