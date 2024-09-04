@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HelloWorldWebAppTAD")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+949cca176668dbf5668dcf35a844ecb1961a368f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee51d15544d1839bddd7fe555f5637b900cd3ae6")]
 [assembly: System.Reflection.AssemblyProductAttribute("HelloWorldWebAppTAD")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HelloWorldWebAppTAD")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
