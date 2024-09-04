@@ -11,10 +11,6 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
-
-jobs:
-  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +33,7 @@ jobs:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
 
-   deploy:
+  deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
@@ -55,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_D204CBB56F004B1FA87BCD01EFD68AE5 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_331ADC83AC9445048EBA6E2FA424918A }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4CEA377A66BC4A6483483BC4101A5E3B }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_19426F848EEF49868C1D14CBCB6C16A6 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_FD90E8DADD58480E99F82A6BB61F7885 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_3CCBDA46797D49778890107C571485D1 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
